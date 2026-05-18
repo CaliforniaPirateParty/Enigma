@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
 import { ethers } from 'ethers';
-import Constants from 'expo-constants';
 import { useWallet } from './WalletContext';
+import { getExtra } from '../utils/contracts';
 
 export type Proposal = {
   id: string;
@@ -52,10 +52,11 @@ export const VotingProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // EIP-712 typed data signature using signer
     const signer = await getSigner();
     if (!signer) throw new Error('Local signer not available');
+    const { chainId } = getExtra();
     const domain = {
-      name: 'PirateVote',
+      name: 'Enigma',
       version: '1',
-      chainId: 1,
+      chainId,
       verifyingContract: '0x0000000000000000000000000000000000000000'
     };
     const types = {

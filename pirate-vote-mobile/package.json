@@ -1,5 +1,5 @@
 {
-  "name": "pirate-vote-mobile",
+  "name": "enigma-app",
   "version": "0.1.0",
   "private": true,
   "main": "index.js",
@@ -25,15 +25,13 @@
     "@react-native-async-storage/async-storage": "^1.23.1",
     "react-native-keychain": "^9.2.1",
     "react-native-get-random-values": "^1.11.0",
-    "react-native-webcrypto": "^0.4.1",
     "react-native-url-polyfill": "^2.0.0",
     "ethers": "^6.13.2",
     "@walletconnect/sign-client": "^2.13.2",
     "@walletconnect/utils": "^2.13.2",
-    "ipfs-http-client": "^60.0.0",
-    "tweetnacl": "^1.0.3",
-    "libsodium-wrappers": "^0.7.13",
-    "@noble/hashes": "^1.4.0"
+    "@xmtp/react-native-sdk": "^2.18.0",
+    "pinata": "^1.7.0",
+    "zustand": "^4.5.4"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -51,7 +49,7 @@
   "jest": {
     "preset": "jest-expo",
     "transformIgnorePatterns": [
-      "node_modules/(?!(react-native|@react-native|react-clone-referenced-element|@react-navigation|@react-native-async-storage|react-native-get-random-values|@walletconnect)/)"
+      "node_modules/(?!(react-native|@react-native|react-clone-referenced-element|@react-navigation|@react-native-async-storage|react-native-get-random-values|@walletconnect|@xmtp)/)"
     ]
   }
 }
