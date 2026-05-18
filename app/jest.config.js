@@ -1,7 +1,18 @@
 module.exports = {
-  preset: 'jest-expo',
-  testEnvironment: 'jsdom',
+  testEnvironment: 'node',
+  preset: 'ts-jest',
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  testMatch: ['**/__tests__/**/*.test.ts?(x)', '**/?(*.)+(spec|test).ts?(x)'],
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|react-clone-referenced-element|@react-navigation|@react-native-async-storage|react-native-get-random-values|@walletconnect)/)'
+    'node_modules/(?!(expo-constants)/)'
+  ],
+  moduleNameMapper: {
+    '^expo-constants$': '<rootDir>/__mocks__/expo-constants.js',
+  },
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    'src/**/*.tsx',
+    '!src/**/*.d.ts',
+    '!src/**/__tests__/**'
   ]
 };
