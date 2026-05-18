@@ -9,6 +9,7 @@ import { VotingProvider } from './src/context/VotingContext';
 import { MessagingProvider } from './src/context/MessagingContext';
 import OnboardingScreen from './src/screens/Wallet/OnboardingScreen';
 import VotingScreen from './src/screens/Voting/VotingScreen';
+import ThreadListScreen from './src/screens/Messaging/ThreadListScreen';
 import MessagingScreen from './src/screens/Messaging/MessagingScreen';
 import BalancesScreen from './src/screens/Wallet/BalancesScreen';
 import OrgListScreen from './src/screens/OrgListScreen';
@@ -18,7 +19,8 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Balances: undefined;
   Voting: undefined;
-  Messaging: undefined;
+  ThreadList: undefined;          // list of all XMTP threads
+  Messaging: { peer: string };    // per-thread detail view — requires peer address
   OrgList: undefined;
   ProposalList: { orgId: string };
 };
@@ -35,7 +37,8 @@ export default function App() {
               <Stack.Screen name="Onboarding" component={OnboardingScreen} />
               <Stack.Screen name="Balances" component={BalancesScreen} />
               <Stack.Screen name="Voting" component={VotingScreen} />
-              <Stack.Screen name="Messaging" component={MessagingScreen} />
+              <Stack.Screen name="ThreadList" component={ThreadListScreen} options={{ title: 'Messages' }} />
+              <Stack.Screen name="Messaging" component={MessagingScreen} options={{ title: 'Thread' }} />
               <Stack.Screen name="OrgList" component={OrgListScreen} options={{ title: 'Organizations' }} />
               <Stack.Screen name="ProposalList" component={ProposalListScreen} options={{ title: 'Proposals' }} />
             </Stack.Navigator>

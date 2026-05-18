@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, Button, TextInput, ScrollView, Alert } from 'react-native';
+import { View, Text, Button, TextInput, ScrollView, Alert, Modal, Clipboard, TouchableOpacity } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import QRCode from 'react-native-qrcode-svg';
 import { RootStackParamList } from '../../../App';
 import { useWallet } from '../../context/WalletContext';
 
 export default function OnboardingScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'Onboarding'>) {
-  const { createWallet, importFromMnemonic, importFromPrivateKey, connectMetaMask, state } = useWallet();
+  const { createWallet, importFromMnemonic, importFromPrivateKey, connectMetaMask, state, pendingWcUri, clearWcUri } = useWallet();
   const [mnemonic, setMnemonic] = useState('');
   const [privKey, setPrivKey] = useState('');
 
@@ -63,11 +64,36 @@ export default function OnboardingScreen({ navigation }: NativeStackScreenProps<
 
       <Button title="Go to Balances" onPress={() => navigation.navigate('Balances')} />
       <Button title="Go to Voting" onPress={() => navigation.navigate('Voting')} />
-      <Button title="Go to Messaging" onPress={() => navigation.navigate('Messaging')} />
+      <Button title="Go to Messaging" onPress={() => navigation.navigate('ThreadList')} />
 
       {state.identity && (
-        <Text>Active: {state.identity.address}</Text>
+        <Text>
+          {state.connectedWith === 'walletconnect' ? 'Connected (WalletConnect): ' : 'Active: '}
+          {state.identity.address}
+        </Text>
       )}
+
+      <Modal
+        visible={!!pendingWcUri}
+        transparent
+        animationType="slide"
+        onRequestClose={clearWcUri}
+      >
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <View style={{ backgroundColor: '#fff', padding: 24, borderRadius: 12, alignItems: 'center' }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>Scan with MetaMask</Text>
+            {pendingWcUri && <QRCode value={pendingWcUri} size={240} />}
+            <TouchableOpacity
+              onPress={() => pendingWcUri && Clipboard.setString(pendingWcUri)}
+              style={{ marginTop: 16 }}
+            >
+              <Text style={{ color: '#007AFF' }}>Copy link</Text>
+            </TouchableOpacity>
+            <Button title="Cancel" onPress={clearWcUri} />
+            <Text style={{ marginTop: 12, fontSize: 12, color: '#666' }}>Waiting for wallet approval…</Text>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
