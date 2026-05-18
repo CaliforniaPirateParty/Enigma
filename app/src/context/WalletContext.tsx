@@ -26,6 +26,8 @@ export type WalletContextValue = {
   disconnect: () => Promise<void>;
   getSigner: () => Promise<ethers.Signer | undefined>;
   getBalance: () => Promise<ethers.BigNumberish | undefined>;
+  pendingWcUri: string | undefined;
+  clearWcUri: () => void;
 };
 
 const WalletContext = createContext<WalletContextValue | undefined>(undefined);
@@ -49,6 +51,7 @@ function usePersistedState<T>(key: string, initial: T) {
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = usePersistedState<WalletState>(STORAGE_KEY_STATE, {});
   const [wcClient, setWcClient] = useState<SignClient | undefined>(undefined);
+  const [pendingWcUri, setPendingWcUri] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     // Lazy init WalletConnect client
@@ -101,6 +104,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     await persistLocalKey(hex);
   }, [persistLocalKey]);
 
+  const clearWcUri = useCallback(() => setPendingWcUri(undefined), []);
+
   const connectMetaMask = useCallback(async () => {
     if (!wcClient) throw new Error('WalletConnect not initialized');
     const { uri, approval } = await wcClient.connect({ requiredNamespaces: {
@@ -111,10 +116,10 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     }});
     if (uri) {
-      // show QR or trigger deep link from UI; here we assume UI handles it
-      // For scaffold, we just await approval
+      setPendingWcUri(uri);
     }
     const session = await approval();
+    setPendingWcUri(undefined);
     const accounts = session.namespaces.eip155.accounts;
     const first = accounts[0]; // eip155:1:0xabc...
     const address = first.split(':')[2];
@@ -154,8 +159,10 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     connectMetaMask,
     disconnect,
     getSigner,
-    getBalance
-  }), [state, createWallet, importFromMnemonic, importFromPrivateKey, connectMetaMask, disconnect, getSigner, getBalance]);
+    getBalance,
+    pendingWcUri,
+    clearWcUri
+  }), [state, createWallet, importFromMnemonic, importFromPrivateKey, connectMetaMask, disconnect, getSigner, getBalance, pendingWcUri, clearWcUri]);
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 };
