@@ -11,13 +11,13 @@
 - Working DM between two test wallets
 
 ## Phase 2 — Contracts (3–4 weeks)
-**Status:** In Progress / Completed
+**Status:** COMPLETE (deployed 2026-05-18)
 **Goal:** Deployable governance and recovery contracts with full test coverage
 
 - Write `OrgFactory`, `MembershipNFT` (soulbound), `OrgGovernor`, `RecoveryRegistry`, `Paymaster` in Foundry
-- Full unit + invariant tests
-- Deploy to Base Sepolia
-- Verify on Basescan
+- Full unit + invariant tests (72 tests, 0 failures)
+- Deployed to Ethereum Sepolia (chainId 11155111) — see `deployments/sepolia.json`
+- OrgFactory, RecoveryRegistry, Paymaster verified on sepolia.etherscan.io
 
 ## Phase 3 — Subgraph + Indexing (1 week)
 **Status:** Planned
