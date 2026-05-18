@@ -1,0 +1,15 @@
+node_modules/
+coverage/
+.DS_Store
+*.log
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Build outputs
+app/coverage/
+app/dist/
+app/.expo/
+app/web-build/
