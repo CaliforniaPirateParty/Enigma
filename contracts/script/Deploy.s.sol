@@ -26,12 +26,16 @@ contract Deploy is Script {
         RecoveryRegistry recovery = new RecoveryRegistry();
         Paymaster paymaster = new Paymaster(IEntryPoint(entryPoint), policySigner, deployer);
 
-        // TODO once Governor / RecoveryRegistry ABIs are pinned:
-        // paymaster.setSelector(bytes4(keccak256("castVote(uint256,uint8)")), Paymaster.OpKind.CastVote, true);
-        // paymaster.setSelector(bytes4(keccak256("castVoteBySig(uint256,uint8,uint8,bytes32,bytes32)")), Paymaster.OpKind.CastVoteBySig, true);
-        // paymaster.setSelector(RecoveryRegistry.proposeRecovery.selector, Paymaster.OpKind.Recovery, true);
-        // paymaster.setSelector(RecoveryRegistry.approveRecovery.selector, Paymaster.OpKind.Recovery, true);
-        // paymaster.setSelector(RecoveryRegistry.executeRecovery.selector, Paymaster.OpKind.Recovery, true);
+        // OZ v5 Governor selectors.
+        paymaster.setSelector(bytes4(keccak256("castVote(uint256,uint8)")), Paymaster.OpKind.CastVote, true);
+        paymaster.setSelector(
+            bytes4(keccak256("castVoteBySig(uint256,uint8,address,bytes)")), Paymaster.OpKind.CastVoteBySig, true
+        );
+
+        // RecoveryRegistry selectors.
+        paymaster.setSelector(RecoveryRegistry.proposeRecovery.selector, Paymaster.OpKind.Recovery, true);
+        paymaster.setSelector(RecoveryRegistry.approveRecovery.selector, Paymaster.OpKind.Recovery, true);
+        paymaster.setSelector(RecoveryRegistry.executeRecovery.selector, Paymaster.OpKind.Recovery, true);
 
         vm.stopBroadcast();
 
