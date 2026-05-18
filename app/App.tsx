@@ -11,12 +11,16 @@ import OnboardingScreen from './src/screens/Wallet/OnboardingScreen';
 import VotingScreen from './src/screens/Voting/VotingScreen';
 import MessagingScreen from './src/screens/Messaging/MessagingScreen';
 import BalancesScreen from './src/screens/Wallet/BalancesScreen';
+import OrgListScreen from './src/screens/OrgListScreen';
+import ProposalListScreen from './src/screens/ProposalListScreen';
 
 export type RootStackParamList = {
   Onboarding: undefined;
   Balances: undefined;
   Voting: undefined;
   Messaging: undefined;
+  OrgList: undefined;
+  ProposalList: { orgId: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -32,6 +36,8 @@ export default function App() {
               <Stack.Screen name="Balances" component={BalancesScreen} />
               <Stack.Screen name="Voting" component={VotingScreen} />
               <Stack.Screen name="Messaging" component={MessagingScreen} />
+              <Stack.Screen name="OrgList" component={OrgListScreen} options={{ title: 'Organizations' }} />
+              <Stack.Screen name="ProposalList" component={ProposalListScreen} options={{ title: 'Proposals' }} />
             </Stack.Navigator>
           </NavigationContainer>
         </MessagingProvider>
@@ -39,3 +45,6 @@ export default function App() {
     </WalletProvider>
   );
 }
+
+// Export screens for direct usage in tests or feature modules
+export { OrgListScreen, ProposalListScreen };
