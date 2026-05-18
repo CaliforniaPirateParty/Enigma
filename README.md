@@ -95,6 +95,29 @@ npx expo start
 
 The app expects a wallet via WalletConnect v2 and reads org/proposal data from the subgraph at <https://api.studio.thegraph.com/query/1753533/enimga-base-sepolia/version/latest> (note: currently labeled `base-sepolia` — being re-pointed to `sepolia`).
 
+## Development Setup
+
+### Environment Variables
+
+Create `app/.env` (excluded from git) with:
+
+```
+EXPO_PUBLIC_XMTP_ENV=dev
+EXPO_PUBLIC_WC_PROJECT_ID=your_walletconnect_project_id
+```
+
+- `EXPO_PUBLIC_XMTP_ENV` — set to `dev` for testnet or `production` for mainnet XMTP network
+- `EXPO_PUBLIC_WC_PROJECT_ID` — get a free project ID from [cloud.walletconnect.com](https://cloud.walletconnect.com)
+
+These are read via `expo-constants` in `WalletContext.tsx` (`walletConnectProjectId`) and `MessagingContext.tsx` (`xmtpEnv`). Without `WC_PROJECT_ID`, the WalletConnect button is a no-op.
+
+### Running tests
+
+```bash
+cd app
+npm test -- --watchAll=false
+```
+
 ## Quick start (contracts)
 
 ```bash
