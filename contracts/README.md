@@ -27,12 +27,14 @@ See `../docs/paymaster.md` for the full policy.
 
 ```bash
 # Install Foundry if missing: https://book.getfoundry.sh/getting-started/installation
-forge install foundry-rs/forge-std --no-commit
-forge install OpenZeppelin/openzeppelin-contracts --no-commit
-forge install eth-infinitism/account-abstraction --no-commit
+forge install foundry-rs/forge-std --no-git --shallow
+forge install OpenZeppelin/openzeppelin-contracts --no-git --shallow
+forge install eth-infinitism/account-abstraction --no-git --shallow
 forge build
 forge test
 ```
+
+First test run on 2026-05-18: 9/9 passing (MembershipNFT × 4, Paymaster × 5).
 
 ## Deploy (Base Sepolia)
 
