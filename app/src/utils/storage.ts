@@ -25,7 +25,7 @@ export async function pinJson(payload: unknown, name?: string): Promise<IpfsPoin
   const res = await c.upload.json(payload as Record<string, unknown>, {
     metadata: name ? { name } : undefined
   });
-  return { cid: res.IpfsHash };
+  return { cid: res.cid };
 }
 
 /** Fetch JSON previously pinned via {@link pinJson} (or any CID). */

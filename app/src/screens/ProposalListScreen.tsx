@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, FlatList, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../App';
 import { useProposals } from '../hooks/useProposals';
 
-interface ProposalListScreenProps {
-  orgId: string;
-}
-
-export default function ProposalListScreen({ orgId }: ProposalListScreenProps) {
+export default function ProposalListScreen({ route }: NativeStackScreenProps<RootStackParamList, 'ProposalList'>) {
+  const orgId = route.params.orgId;
   const { data: proposals, loading, error, refetch } = useProposals(orgId);
   const [latency, setLatency] = useState(0);
   const [startTime] = useState(Date.now());
