@@ -17,6 +17,7 @@ import OrgListScreen from './src/screens/OrgListScreen';
 import ProposalListScreen from './src/screens/ProposalListScreen';
 import OrgSwitcherScreen from './src/screens/Org/OrgSwitcherScreen';
 import OrgDirectoryScreen from './src/screens/Org/OrgDirectoryScreen';
+import ProposalDetailScreen from './src/screens/Org/ProposalDetailScreen';
 import { useOrgStore } from './src/state/orgStore';
 
 // Inline stub — plan 04-04 replaces this with the full recovery flow
@@ -39,6 +40,8 @@ export type RootStackParamList = {
   OrgSwitcher: undefined;
   OrgDirectory: undefined;
   RecoveryHome: undefined;
+  ProposalDetail: { proposalId: string; governor: string; description?: string };
+  CreateProposal: { orgId: string; governor: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -65,6 +68,7 @@ export default function App() {
               <Stack.Screen name="Messaging" component={MessagingScreen} options={{ title: 'Thread' }} />
               <Stack.Screen name="OrgList" component={OrgListScreen} options={{ title: 'Organizations' }} />
               <Stack.Screen name="ProposalList" component={ProposalListScreen} options={{ title: 'Proposals' }} />
+              <Stack.Screen name="ProposalDetail" component={ProposalDetailScreen} options={{ title: 'Proposal' }} />
             </Stack.Navigator>
           </NavigationContainer>
         </MessagingProvider>

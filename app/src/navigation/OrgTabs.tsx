@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import OrgChatScreen from '../screens/Org/OrgChatScreen';
-import ProposalsTabPlaceholder from '../screens/Org/__placeholders__/ProposalsTabPlaceholder';
+import OrgProposalsScreen from '../screens/Org/OrgProposalsScreen';
 import OrgMembersScreen from '../screens/Org/OrgMembersScreen';
 import OrgInfoScreen from '../screens/Org/OrgInfoScreen';
 
@@ -24,7 +24,7 @@ export function OrgTabs() {
       />
       <Tab.Screen
         name="ProposalsTab"
-        component={ProposalsTabPlaceholder}
+        component={OrgProposalsScreen}
         options={{ title: 'Proposals' }}
       />
       <Tab.Screen
