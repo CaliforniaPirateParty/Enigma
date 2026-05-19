@@ -15,6 +15,7 @@ module.exports = {
   moduleNameMapper: {
     '^expo-constants$': '<rootDir>/__mocks__/expo-constants.js',
     // Stub native modules not available in Node test env
+    '^react-native$': '<rootDir>/__mocks__/react-native.js',
     '^react-native-svg$': '<rootDir>/__mocks__/react-native-svg.js',
     '^react-native-qrcode-svg$': '<rootDir>/__mocks__/react-native-qrcode-svg.js',
   },
