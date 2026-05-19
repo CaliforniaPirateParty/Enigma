@@ -1,3 +1,4 @@
+import { ethers } from 'ethers';
 import { getExtra } from '../utils/contracts';
 import {
   Org,
@@ -10,7 +11,30 @@ import {
 
 const QUERY_TIMEOUT = 10000; // 10 seconds
 
-async function querySubgraph<T>(query: string): Promise<T> {
+/**
+ * Lowercase + reject anything that isn't a valid 20-byte Ethereum address.
+ * The subgraph stores addresses lowercased, so callers must match that case.
+ */
+function normalizeAddress(input: string, field: string): string {
+  if (!input || typeof input !== 'string' || !ethers.isAddress(input)) {
+    throw new Error(`Invalid ${field}: ${input}`);
+  }
+  return input.toLowerCase();
+}
+
+/**
+ * Lowercase address-or-id. Org/member/proposal ids embed an address; subgraph
+ * stores them lowercased. We accept either a raw address or a composite id
+ * (e.g. `${orgId}-1`) and just lowercase — the subgraph rejects malformed ids.
+ */
+function normalizeId(input: string, field: string): string {
+  if (!input || typeof input !== 'string') {
+    throw new Error(`Invalid ${field}: ${input}`);
+  }
+  return input.toLowerCase();
+}
+
+async function querySubgraph<T>(query: string, variables: Record<string, unknown>): Promise<T> {
   const { subgraphUrl } = getExtra();
   if (!subgraphUrl) {
     throw new Error('Subgraph URL not configured in app.config.ts');
@@ -25,7 +49,7 @@ async function querySubgraph<T>(query: string): Promise<T> {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query, variables }),
       signal: controller.signal,
     });
 
@@ -70,11 +94,7 @@ export async function queryOrgs(first: number = 100, skip: number = 0): Promise<
     }
   `;
 
-  const data = await querySubgraph<{ orgs: Org[] }>(
-    query.replace('$first: Int!, $skip: Int!', '')
-      .replace('(first: $first, skip: $skip,', `(first: ${first}, skip: ${skip},`)
-  );
-
+  const data = await querySubgraph<{ orgs: Org[] }>(query, { first, skip });
   return data?.orgs || [];
 }
 
@@ -83,9 +103,9 @@ export async function queryOrgs(first: number = 100, skip: number = 0): Promise<
  * IDX-03: App queries subgraph for user's orgs
  */
 export async function queryUserOrgs(userAddress: string): Promise<Org[]> {
-  const addressLower = userAddress.toLowerCase();
+  const address = normalizeAddress(userAddress, 'userAddress');
   const query = `
-    query GetUserOrgs($address: String!) {
+    query GetUserOrgs($address: Bytes!) {
       members(where: { address: $address, active: true }) {
         org {
           id
@@ -103,14 +123,10 @@ export async function queryUserOrgs(userAddress: string): Promise<Org[]> {
     }
   `;
 
-  const data = await querySubgraph<{ members: Array<{ org: Org }> }>(
-    query.replace('$address: String!', '')
-      .replace('{ address: $address,', `{ address: "${addressLower}",`)
-  );
-
-  const userOrgs = data?.members?.map(m => m.org) || [];
+  const data = await querySubgraph<{ members: Array<{ org: Org }> }>(query, { address });
+  const userOrgs = data?.members?.map((m) => m.org) || [];
   // Deduplicate in case user has multiple NFTs in same org (shouldn't happen but safe)
-  return Array.from(new Map(userOrgs.map(org => [org.id, org])).values());
+  return Array.from(new Map(userOrgs.map((org) => [org.id, org])).values());
 }
 
 /**
@@ -120,8 +136,9 @@ export async function queryUserOrgs(userAddress: string): Promise<Org[]> {
 export async function queryProposals(
   orgId: string,
   first: number = 100,
-  skip: number = 0
+  skip: number = 0,
 ): Promise<Proposal[]> {
+  const org = normalizeId(orgId, 'orgId');
   const query = `
     query GetProposals($org: String!, $first: Int!, $skip: Int!) {
       proposals(where: { org: $org }, first: $first, skip: $skip, orderBy: createdAt, orderDirection: desc) {
@@ -142,12 +159,7 @@ export async function queryProposals(
     }
   `;
 
-  const data = await querySubgraph<{ proposals: Proposal[] }>(
-    query.replace('$org: String!, $first: Int!, $skip: Int!', '')
-      .replace('{ org: $org }', `{ org: "${orgId}" }`)
-      .replace('(first: $first, skip: $skip,', `(first: ${first}, skip: ${skip},`)
-  );
-
+  const data = await querySubgraph<{ proposals: Proposal[] }>(query, { org, first, skip });
   return data?.proposals || [];
 }
 
@@ -159,6 +171,7 @@ export async function queryProposalDetail(proposalId: string): Promise<{
   proposal: Proposal | null;
   votes: Vote[];
 }> {
+  const id = normalizeId(proposalId, 'proposalId');
   const query = `
     query GetProposalDetail($proposalId: String!) {
       proposal(id: $proposalId) {
@@ -195,11 +208,7 @@ export async function queryProposalDetail(proposalId: string): Promise<{
   const data = await querySubgraph<{
     proposal: Proposal | null;
     votes: Vote[];
-  }>(
-    query.replace('$proposalId: String!', '')
-      .replace('(id: $proposalId)', `(id: "${proposalId}")`)
-      .replace('{ proposal: $proposalId }', `{ proposal: "${proposalId}" }`)
-  );
+  }>(query, { proposalId: id });
 
   return {
     proposal: data?.proposal || null,
@@ -214,8 +223,9 @@ export async function queryProposalDetail(proposalId: string): Promise<{
 export async function queryOrgMembers(
   orgId: string,
   first: number = 100,
-  skip: number = 0
+  skip: number = 0,
 ): Promise<Member[]> {
+  const org = normalizeId(orgId, 'orgId');
   const query = `
     query GetMembers($org: String!, $first: Int!, $skip: Int!) {
       members(where: { org: $org, active: true }, first: $first, skip: $skip, orderBy: mintedAt, orderDirection: desc) {
@@ -228,12 +238,7 @@ export async function queryOrgMembers(
     }
   `;
 
-  const data = await querySubgraph<{ members: Member[] }>(
-    query.replace('$org: String!, $first: Int!, $skip: Int!', '')
-      .replace('{ org: $org, active: true }', `{ org: "${orgId}", active: true }`)
-      .replace('(first: $first, skip: $skip,', `(first: ${first}, skip: ${skip},`)
-  );
-
+  const data = await querySubgraph<{ members: Member[] }>(query, { org, first, skip });
   return data?.members || [];
 }
 
@@ -241,9 +246,9 @@ export async function queryOrgMembers(
  * Query helper: Get user's recovery delegates
  */
 export async function queryRecoveryDelegates(userAddress: string): Promise<RecoveryDelegate[]> {
-  const addressLower = userAddress.toLowerCase();
+  const user = normalizeAddress(userAddress, 'userAddress');
   const query = `
-    query GetDelegates($user: String!) {
+    query GetDelegates($user: Bytes!) {
       recoveryDelegates(where: { user: $user, active: true }) {
         id
         delegate
@@ -252,11 +257,7 @@ export async function queryRecoveryDelegates(userAddress: string): Promise<Recov
     }
   `;
 
-  const data = await querySubgraph<{ recoveryDelegates: RecoveryDelegate[] }>(
-    query.replace('$user: String!', '')
-      .replace('{ user: $user, active: true }', `{ user: "${addressLower}", active: true }`)
-  );
-
+  const data = await querySubgraph<{ recoveryDelegates: RecoveryDelegate[] }>(query, { user });
   return data?.recoveryDelegates || [];
 }
 

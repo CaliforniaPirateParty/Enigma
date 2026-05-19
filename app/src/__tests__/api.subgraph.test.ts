@@ -98,7 +98,7 @@ describe('Subgraph API', () => {
         }),
       });
 
-      const result = await queryUserOrgs('0xabc');
+      const result = await queryUserOrgs('0xabcdef0000000000000000000000000000000000');
       expect(result).toEqual(mockOrgs);
     });
 
@@ -112,7 +112,7 @@ describe('Subgraph API', () => {
         }),
       });
 
-      const result = await queryUserOrgs('0xabc');
+      const result = await queryUserOrgs('0xabcdef0000000000000000000000000000000000');
       expect(result).toHaveLength(1);
     });
 
@@ -124,9 +124,13 @@ describe('Subgraph API', () => {
         }),
       });
 
-      await queryUserOrgs('0xABC');
+      await queryUserOrgs('0xABCDEF0000000000000000000000000000000000');
       const callArg = (global.fetch as jest.Mock).mock.calls[0][1];
-      expect(callArg.body).toContain('0xabc');
+      expect(callArg.body).toContain('0xabcdef0000000000000000000000000000000000');
+    });
+
+    it('should reject malformed addresses', async () => {
+      await expect(queryUserOrgs('0xabc')).rejects.toThrow(/Invalid userAddress/);
     });
   });
 
@@ -242,9 +246,13 @@ describe('Subgraph API', () => {
         }),
       });
 
-      const result = await queryRecoveryDelegates('0xabc');
+      const result = await queryRecoveryDelegates('0xabcdef0000000000000000000000000000000000');
       expect(result).toHaveLength(1);
       expect(result[0].delegate).toBe('0xdef');
+    });
+
+    it('should reject malformed addresses', async () => {
+      await expect(queryRecoveryDelegates('not-an-address')).rejects.toThrow(/Invalid userAddress/);
     });
   });
 });
