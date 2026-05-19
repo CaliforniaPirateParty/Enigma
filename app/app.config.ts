@@ -21,6 +21,7 @@ export default {
     subgraphUrl: process.env.SUBGRAPH_URL || '',
     paymasterAddress: process.env.PAYMASTER_ADDRESS || '',
     orgFactoryAddress: process.env.ORG_FACTORY_ADDRESS || '',
-    recoveryRegistryAddress: process.env.RECOVERY_REGISTRY_ADDRESS || ''
+    recoveryRegistryAddress: process.env.RECOVERY_REGISTRY_ADDRESS || '',
+    signerServiceUrl: process.env.SIGNER_SERVICE_URL || ''
   }
 };
