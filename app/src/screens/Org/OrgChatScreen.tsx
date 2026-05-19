@@ -24,7 +24,7 @@ export default function OrgChatScreen() {
   const navigation = useNavigation<any>();
   const activeOrgId = useOrgStore((s) => s.activeOrgId);
   const { state: walletState } = useWallet();
-  const walletAddress = (walletState as any)?.address ?? (walletState as any)?.walletAddress ?? '';
+  const walletAddress = walletState.identity?.address;
 
   const { data: userOrgs } = useUserOrgs(walletAddress);
   const { data: allOrgs } = useOrgs();
