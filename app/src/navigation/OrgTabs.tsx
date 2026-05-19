@@ -1,8 +1,8 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import ChatTabPlaceholder from '../screens/Org/__placeholders__/ChatTabPlaceholder';
+import OrgChatScreen from '../screens/Org/OrgChatScreen';
 import ProposalsTabPlaceholder from '../screens/Org/__placeholders__/ProposalsTabPlaceholder';
-import MembersTabPlaceholder from '../screens/Org/__placeholders__/MembersTabPlaceholder';
+import OrgMembersScreen from '../screens/Org/OrgMembersScreen';
 import OrgInfoScreen from '../screens/Org/OrgInfoScreen';
 
 export type OrgTabsParamList = {
@@ -19,7 +19,7 @@ export function OrgTabs() {
     <Tab.Navigator>
       <Tab.Screen
         name="ChatTab"
-        component={ChatTabPlaceholder}
+        component={OrgChatScreen}
         options={{ title: 'Chat' }}
       />
       <Tab.Screen
@@ -29,7 +29,7 @@ export function OrgTabs() {
       />
       <Tab.Screen
         name="MembersTab"
-        component={MembersTabPlaceholder}
+        component={OrgMembersScreen}
         options={{ title: 'Members' }}
       />
       <Tab.Screen

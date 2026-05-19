@@ -21,11 +21,11 @@ const ActivityIndicator = 'ActivityIndicator';
 const SafeAreaView = 'SafeAreaView';
 
 // FlatList — minimal implementation that calls renderItem for each data entry
-function FlatList({ data, renderItem, keyExtractor, ListEmptyComponent }) {
+function FlatList({ data, renderItem, keyExtractor, ListEmptyComponent, testID, style, refreshing, onRefresh }) {
   if (!data || data.length === 0) {
     return React.createElement(
       'View',
-      null,
+      { testID, style },
       ListEmptyComponent
         ? typeof ListEmptyComponent === 'function'
           ? React.createElement(ListEmptyComponent)
@@ -35,12 +35,17 @@ function FlatList({ data, renderItem, keyExtractor, ListEmptyComponent }) {
   }
   return React.createElement(
     'View',
-    null,
+    { testID, style },
     data.map((item, index) => {
       const key = keyExtractor ? keyExtractor(item, index) : String(index);
       return React.createElement('View', { key }, renderItem({ item, index }));
     }),
   );
+}
+
+// Button — simple stub component
+function Button({ title, onPress, disabled }) {
+  return React.createElement('Pressable', { onPress, disabled }, React.createElement('Text', null, title));
 }
 
 // StyleSheet — identity map
@@ -129,6 +134,7 @@ const StatusBar = { setBarStyle: jest.fn(), currentHeight: 0 };
 module.exports = {
   View,
   Text,
+  Button,
   Pressable,
   TouchableOpacity,
   ScrollView,
