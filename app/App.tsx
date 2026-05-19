@@ -2,7 +2,6 @@ import 'react-native-gesture-handler';
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 import React, { useEffect } from 'react';
-import { View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { WalletProvider } from './src/context/WalletContext';
@@ -18,16 +17,12 @@ import ProposalListScreen from './src/screens/ProposalListScreen';
 import OrgSwitcherScreen from './src/screens/Org/OrgSwitcherScreen';
 import OrgDirectoryScreen from './src/screens/Org/OrgDirectoryScreen';
 import ProposalDetailScreen from './src/screens/Org/ProposalDetailScreen';
+import CreateProposalScreen from './src/screens/Org/CreateProposalScreen';
+import RecoveryHomeScreen from './src/screens/Recovery/RecoveryHomeScreen';
+import RecoverySetupScreen from './src/screens/Recovery/RecoverySetupScreen';
+import RecoveryInitiateScreen from './src/screens/Recovery/RecoveryInitiateScreen';
+import RecoveryStatusScreen from './src/screens/Recovery/RecoveryStatusScreen';
 import { useOrgStore } from './src/state/orgStore';
-
-// Inline stub — plan 04-04 replaces this with the full recovery flow
-function RecoveryStub() {
-  return (
-    <View style={{ padding: 16 }}>
-      <Text>Recovery — implemented in plan 04-04</Text>
-    </View>
-  );
-}
 
 export type RootStackParamList = {
   Onboarding: undefined;
@@ -40,6 +35,9 @@ export type RootStackParamList = {
   OrgSwitcher: undefined;
   OrgDirectory: undefined;
   RecoveryHome: undefined;
+  RecoverySetup: undefined;
+  RecoveryInitiate: undefined;
+  RecoveryStatus: { user: string };
   ProposalDetail: { proposalId: string; governor: string; description?: string };
   CreateProposal: { orgId: string; governor: string };
 };
@@ -61,7 +59,10 @@ export default function App() {
               <Stack.Screen name="Onboarding" component={OnboardingScreen} />
               <Stack.Screen name="OrgSwitcher" component={OrgSwitcherScreen} options={{ title: 'Organizations' }} />
               <Stack.Screen name="OrgDirectory" component={OrgDirectoryScreen} options={{ title: 'Org Directory' }} />
-              <Stack.Screen name="RecoveryHome" component={RecoveryStub} options={{ title: 'Recovery' }} />
+              <Stack.Screen name="RecoveryHome" component={RecoveryHomeScreen} options={{ title: 'Recovery' }} />
+              <Stack.Screen name="RecoverySetup" component={RecoverySetupScreen} options={{ title: 'Set Recovery Delegates' }} />
+              <Stack.Screen name="RecoveryInitiate" component={RecoveryInitiateScreen} options={{ title: 'Initiate Recovery' }} />
+              <Stack.Screen name="RecoveryStatus" component={RecoveryStatusScreen} options={{ title: 'Recovery Status' }} />
               <Stack.Screen name="Balances" component={BalancesScreen} />
               <Stack.Screen name="Voting" component={VotingScreen} />
               <Stack.Screen name="ThreadList" component={ThreadListScreen} options={{ title: 'Messages' }} />
@@ -69,6 +70,7 @@ export default function App() {
               <Stack.Screen name="OrgList" component={OrgListScreen} options={{ title: 'Organizations' }} />
               <Stack.Screen name="ProposalList" component={ProposalListScreen} options={{ title: 'Proposals' }} />
               <Stack.Screen name="ProposalDetail" component={ProposalDetailScreen} options={{ title: 'Proposal' }} />
+              <Stack.Screen name="CreateProposal" component={CreateProposalScreen} options={{ title: 'New Proposal' }} />
             </Stack.Navigator>
           </NavigationContainer>
         </MessagingProvider>

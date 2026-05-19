@@ -15,6 +15,7 @@ const Text = 'Text';
 const Pressable = 'Pressable';
 const TouchableOpacity = 'TouchableOpacity';
 const ScrollView = 'ScrollView';
+const KeyboardAvoidingView = 'KeyboardAvoidingView';
 const Image = 'Image';
 const TextInput = 'TextInput';
 const ActivityIndicator = 'ActivityIndicator';
@@ -138,6 +139,7 @@ module.exports = {
   Pressable,
   TouchableOpacity,
   ScrollView,
+  KeyboardAvoidingView,
   Image,
   TextInput,
   ActivityIndicator,
