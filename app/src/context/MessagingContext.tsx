@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import Constants from 'expo-constants';
 import * as Keychain from 'react-native-keychain';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Client, PublicIdentity, type Conversation, type DecodedMessage } from '@xmtp/react-native-sdk';
 import { useWallet } from './WalletContext';
 
@@ -15,11 +16,17 @@ export type MessagingContextValue = {
   ready: boolean;
   threads: Thread[];
   messages: Record<string, DecodedMessage[]>;  // keyed by peer Ethereum address
+  // Org group chat extensions
+  orgGroups: Record<string, Conversation>;
+  orgGroupMessages: Record<string, DecodedMessage[]>;
   initClient: () => Promise<void>;
   startThread: (peerAddress: string) => Promise<Thread>;
   sendMessage: (peerAddress: string, text: string) => Promise<void>;
   listMessages: (peerAddress: string, limit?: number) => Promise<DecodedMessage[]>;
   isValidAddress: (addr: string) => boolean;
+  getOrCreateOrgGroup: (orgId: string, memberAddresses: string[]) => Promise<Conversation>;
+  sendGroupMessage: (orgId: string, text: string) => Promise<void>;
+  reconcileGroupMembers: (orgId: string, desiredAddresses: string[]) => Promise<void>;
 };
 
 const MessagingContext = createContext<MessagingContextValue | undefined>(undefined);
@@ -57,6 +64,10 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const initInFlight = useRef(false);
   // Map conversationId -> peer Ethereum address (for routing incoming stream messages)
   const convIdToPeerRef = useRef<Record<string, string>>({});
+  // Org group chat state
+  const [orgGroups, setOrgGroups] = useState<Record<string, Conversation>>({});
+  const [orgGroupMessages, setOrgGroupMessages] = useState<Record<string, DecodedMessage[]>>({});
+  const convIdToOrgIdRef = useRef<Record<string, string>>({});
 
   const env = ((Constants.expoConfig?.extra as { xmtpEnv?: 'dev' | 'production' })?.xmtpEnv) || 'dev';
 
@@ -98,9 +109,37 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       convIdToPeerRef.current = newConvIdToPeer;
       setThreads(threadList);
 
-      // Load initial message history (last 50) for all conversations
+      // Rehydrate org group mappings from AsyncStorage
+      const newConvIdToOrgId: Record<string, string> = {};
+      const orgGroupsMap: Record<string, Conversation> = {};
+      const orgGroupMsgsMap: Record<string, DecodedMessage[]> = {};
+      try {
+        const raw = await AsyncStorage.getItem('enigma:org-group-map');
+        if (raw) {
+          const savedMap: Record<string, string> = JSON.parse(raw);
+          const convoById = new Map(convos.map((c2) => [c2.id as string, c2]));
+          for (const [orgKey, groupConvId] of Object.entries(savedMap)) {
+            const conv = convoById.get(groupConvId);
+            if (conv) {
+              orgGroupsMap[orgKey] = conv;
+              newConvIdToOrgId[groupConvId] = orgKey;
+              // Load last 50 messages for this group
+              const msgs = await conv.messages({ limit: 50 });
+              orgGroupMsgsMap[orgKey] = msgs as DecodedMessage[];
+            }
+          }
+        }
+      } catch {
+        // Non-fatal: start with empty org groups
+      }
+      convIdToOrgIdRef.current = newConvIdToOrgId;
+      setOrgGroups(orgGroupsMap);
+      setOrgGroupMessages(orgGroupMsgsMap);
+
+      // Load initial message history (last 50) for DM conversations only
       const msgMap: Record<string, DecodedMessage[]> = {};
       for (const conv of convos) {
+        if (newConvIdToOrgId[conv.id]) continue; // skip org group convos
         const peer = newConvIdToPeer[conv.id];
         const msgs = await conv.messages({ limit: 50 });
         msgMap[peer] = msgs as DecodedMessage[];
@@ -110,6 +149,16 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // Start streaming all incoming messages via callback API
       await c.conversations.streamAllMessages(async (msg) => {
         const convId = (msg as any).topic ?? (msg as any).conversationId ?? '';
+        // Route to org group messages if it's a known group conversation
+        const orgId2 = convIdToOrgIdRef.current[convId];
+        if (orgId2) {
+          setOrgGroupMessages((prev) => ({
+            ...prev,
+            [orgId2]: [...(prev[orgId2] ?? []), msg as unknown as DecodedMessage],
+          }));
+          return;
+        }
+        // Otherwise route to DM messages
         const peer = convIdToPeerRef.current[convId] ?? (msg as any).senderInboxId ?? convId;
         setMessages((prev) => ({
           ...prev,
@@ -177,6 +226,98 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     [threads]
   );
 
+  // ---------------------------------------------------------------------------
+  // Org group chat extensions
+  // ---------------------------------------------------------------------------
+
+  const getOrCreateOrgGroup = useCallback(
+    async (orgId: string, memberAddresses: string[]): Promise<Conversation> => {
+      const key = orgId.toLowerCase();
+      const existing = orgGroups[key];
+      if (existing) return existing;
+      if (!client) throw new Error('XMTP client not ready — call initClient() first');
+      const identities = memberAddresses
+        .filter((a) => isValidAddress(a))
+        .map((a) => new PublicIdentity(a, 'ETHEREUM'));
+      const group = await (client.conversations as any).newGroupWithIdentities(identities);
+      convIdToOrgIdRef.current[group.id] = key;
+      setOrgGroups((prev) => ({ ...prev, [key]: group }));
+      // Persist mapping
+      try {
+        const raw = await AsyncStorage.getItem('enigma:org-group-map');
+        const map = raw ? JSON.parse(raw) : {};
+        map[key] = group.id;
+        await AsyncStorage.setItem('enigma:org-group-map', JSON.stringify(map));
+      } catch {
+        // Non-fatal persistence failure
+      }
+      // Seed message history
+      const msgs = await group.messages({ limit: 50 });
+      setOrgGroupMessages((prev) => ({ ...prev, [key]: msgs as DecodedMessage[] }));
+      return group;
+    },
+    [client, orgGroups]
+  );
+
+  const sendGroupMessage = useCallback(
+    async (orgId: string, text: string) => {
+      const key = orgId.toLowerCase();
+      const group = orgGroups[key];
+      if (!group) throw new Error('No group for org — call getOrCreateOrgGroup first');
+      await group.send(text);
+      const optimistic = {
+        id: `optimistic-${Date.now()}`,
+        senderInboxId: client?.inboxId ?? '',
+        content: () => text,
+        sentNs: Date.now() * 1_000_000,
+        deliveryStatus: 'PUBLISHED',
+      } as unknown as DecodedMessage;
+      setOrgGroupMessages((prev) => ({
+        ...prev,
+        [key]: [...(prev[key] ?? []), optimistic],
+      }));
+    },
+    [client, orgGroups]
+  );
+
+  const reconcileGroupMembers = useCallback(
+    async (orgId: string, desired: string[]) => {
+      const key = orgId.toLowerCase();
+      const group = orgGroups[key];
+      if (!group) return; // nothing to reconcile yet
+      const desiredLc = new Set(desired.map((a) => a.toLowerCase()));
+      let current: any[] = [];
+      try {
+        current = await (group as any).members();
+      } catch {
+        return; // can't read members, skip
+      }
+      const currentEthAddrs = new Set<string>();
+      for (const m of current) {
+        const ids = (m as any).addresses ?? (m as any).accountIdentifiers ?? [];
+        for (const id of ids) {
+          const addr = typeof id === 'string' ? id : id.identifier;
+          if (addr && /^0x[0-9a-fA-F]{40}$/.test(addr)) currentEthAddrs.add(addr.toLowerCase());
+        }
+      }
+      const toAdd = [...desiredLc].filter((a) => !currentEthAddrs.has(a));
+      const toRemove = [...currentEthAddrs].filter((a) => !desiredLc.has(a));
+      if (toAdd.length > 0) {
+        const ids = toAdd.map((a) => new PublicIdentity(a, 'ETHEREUM'));
+        await (group as any)
+          .addMembersByIdentities?.(ids)
+          .catch(() => (group as any).addMembers?.(toAdd));
+      }
+      // Member removal is permissioned in XMTP MLS; attempt best-effort and swallow errors
+      if (toRemove.length > 0) {
+        await (group as any)
+          .removeMembersByIdentities?.(toRemove.map((a) => new PublicIdentity(a, 'ETHEREUM')))
+          .catch(() => {});
+      }
+    },
+    [orgGroups]
+  );
+
   useEffect(() => {
     return () => {
       // Cancel all streams on unmount
@@ -188,8 +329,23 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [client]);
 
   const value: MessagingContextValue = useMemo(
-    () => ({ client, ready: !!client, threads, messages, initClient, startThread, sendMessage, listMessages, isValidAddress }),
-    [client, threads, messages, initClient, startThread, sendMessage, listMessages]
+    () => ({
+      client,
+      ready: !!client,
+      threads,
+      messages,
+      orgGroups,
+      orgGroupMessages,
+      initClient,
+      startThread,
+      sendMessage,
+      listMessages,
+      isValidAddress,
+      getOrCreateOrgGroup,
+      sendGroupMessage,
+      reconcileGroupMembers,
+    }),
+    [client, threads, messages, orgGroups, orgGroupMessages, initClient, startThread, sendMessage, listMessages, getOrCreateOrgGroup, sendGroupMessage, reconcileGroupMembers]
   );
 
   return <MessagingContext.Provider value={value}>{children}</MessagingContext.Provider>;
