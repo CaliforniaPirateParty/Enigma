@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import SignClient from '@walletconnect/sign-client';
 import { getSignerFromPrivateKey, parseMaybeHex } from '../utils/crypto';
 import Constants from 'expo-constants';
+import { getExtra } from '../utils/contracts';
 
 export type WalletIdentity = {
   address: string;
@@ -82,7 +83,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       accessControl: Keychain.SECURITY_LEVEL.SECURE_HARDWARE ? Keychain.ACCESS_CONTROL.BIOMETRY_ANY : undefined
     });
     const wallet = new Wallet(privateKeyHex);
-    setState({ identity: { address: await wallet.getAddress(), chainId: 1 }, connectedWith: 'local' });
+    const { chainId } = getExtra();
+    setState({ identity: { address: await wallet.getAddress(), chainId }, connectedWith: 'local' });
   }, [setState]);
 
   const createWallet = useCallback(async (strength: 128 | 256) => {
@@ -108,10 +110,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const connectMetaMask = useCallback(async () => {
     if (!wcClient) throw new Error('WalletConnect not initialized');
+    const { chainId: configuredChainId } = getExtra();
     const { uri, approval } = await wcClient.connect({ requiredNamespaces: {
       eip155: {
         methods: ['eth_sendTransaction', 'personal_sign', 'eth_signTypedData', 'eth_signTypedData_v4'],
-        chains: ['eip155:1'],
+        chains: [`eip155:${configuredChainId}`],
         events: ['accountsChanged', 'chainChanged']
       }
     }});
@@ -121,9 +124,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const session = await approval();
     setPendingWcUri(undefined);
     const accounts = session.namespaces.eip155.accounts;
-    const first = accounts[0]; // eip155:1:0xabc...
-    const address = first.split(':')[2];
-    setState({ identity: { address, chainId: 1 }, connectedWith: 'walletconnect', wcTopic: session.topic });
+    const first = accounts[0]; // eip155:<chainId>:0xabc...
+    const parts = first.split(':');
+    const address = parts[2];
+    const sessionChainId = Number(parts[1]) || configuredChainId;
+    setState({ identity: { address, chainId: sessionChainId }, connectedWith: 'walletconnect', wcTopic: session.topic });
   }, [wcClient, setState]);
 
   const disconnect = useCallback(async () => {

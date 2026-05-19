@@ -5,7 +5,6 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { WalletProvider } from './src/context/WalletContext';
-import { VotingProvider } from './src/context/VotingContext';
 import { MessagingProvider } from './src/context/MessagingContext';
 import OnboardingScreen from './src/screens/Wallet/OnboardingScreen';
 import VotingScreen from './src/screens/Voting/VotingScreen';
@@ -52,9 +51,8 @@ export default function App() {
 
   return (
     <WalletProvider>
-      <VotingProvider>
-        <MessagingProvider>
-          <NavigationContainer>
+      <MessagingProvider>
+        <NavigationContainer>
             <Stack.Navigator initialRouteName="Onboarding">
               <Stack.Screen name="Onboarding" component={OnboardingScreen} />
               <Stack.Screen name="OrgSwitcher" component={OrgSwitcherScreen} options={{ title: 'Organizations' }} />
@@ -72,9 +70,8 @@ export default function App() {
               <Stack.Screen name="ProposalDetail" component={ProposalDetailScreen} options={{ title: 'Proposal' }} />
               <Stack.Screen name="CreateProposal" component={CreateProposalScreen} options={{ title: 'New Proposal' }} />
             </Stack.Navigator>
-          </NavigationContainer>
-        </MessagingProvider>
-      </VotingProvider>
+        </NavigationContainer>
+      </MessagingProvider>
     </WalletProvider>
   );
 }
